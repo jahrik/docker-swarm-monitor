@@ -1,15 +1,13 @@
 # Docker Swarm Monitoring - Part 01 (Node-exporter, Prometheus, and Grafana)
 
-Monitoring can be configured across a Docker Swarm cluster using services managed by swarm itself. Start with the prometheus node-exporter to gather system info from the hardware machine Docker is running on.  You'll have to mount the system's directories as docker volumes to accomplish this.  This will gather system info and export it to a website that Prometheus server can then scrape every 15 seconds or so.  With those 2 services in place, Grafana can then be pointed at the Prometheus server to build beautiful graphs and charts about system usage.
-
-![grafana_node_exporter](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/grafana_node_exporter.png)
+An affective monitoring system can be configured across a Docker Swarm cluster using services managed by swarm itself. Starting with the prometheus node-exporter to gather system info from all host machines running Docker in swarm mode.  Mount the system's directories as docker volumes to accomplish read access.  Prometheus exporter gathers system info such as CPU, memory, and disk usage and exports it to a website that Prometheus server can then scrape every 15 seconds and fill a Time Series Data Base.  With those 2 services in place, Grafana can then be pointed at the Prometheus server to build beautiful graphs and charts!
 
 Prerequisites: 
 * [Docker Install Docs](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
 * [Docker Swarm Docs](https://docs.docker.com/engine/reference/commandline/swarm_init/)
 * [github.com/jahrik/docker-swarm-monitor](https://github.com/jahrik/docker-swarm-monitor)
 
-Docker Swarm uses [Compose v3](https://docs.docker.com/compose/compose-file/) and uses a `docker-stack.yml` file, much like the `docker-compose.yml` files designed to be used with the `docker-compose` tool, which use Compose v2.  One of the biggest differences you'll run into when starting services with `docker stack deploy` over `docker-compose up/down` is that docker swarm creates a [Routing Mesh](https://docs.docker.com/engine/swarm/ingress/) for you, where as with `docker-compose` networks and containers have to be explicitly created and linked.  In swarm mode, the `link: ` is no longer needed.  Services can be included in the same stack file and by default be generated in the same network stack at deploy time, allowing docker containers to call each other by service name.  This network can then be used by other stacks and future services by calling it in the stack file and assigning a service to it.  This makes it easy to keep containers on their own isolated containers or to cluster certain services like metrics and logging tools together on the same private network.
+Docker Swarm uses [Compose v3](https://docs.docker.com/compose/compose-file/) and uses a `docker-stack.yml` file, much like the `docker-compose.yml` files designed to be used with the `docker-compose` tool, which use Compose v2.  One of the biggest differences you'll run into when starting services with `docker stack deploy` over `docker-compose up/down` is that docker swarm creates a [Routing Mesh](https://docs.docker.com/engine/swarm/ingress/) for you, where as with `docker-compose` networks and containers have to be explicitly created and linked.  In swarm mode, the `link: ` is no longer needed.  Services can be included in the same stack file and, by default, be created in the same network stack at deploy time, allowing docker containers to call each other by service name.  This network can then be used by other stacks and future services by calling it in the stack file and assigning a service to it.  This makes it easy to keep containers on their own isolated network or to cluster certain services like metrics and logging tools together on the same network.
 
 Here is a Compose v3 docker-stack.yml file for this project that will start three services: Grafana, Prometheus server, and Prometheus node-exporter.
 
@@ -61,6 +59,10 @@ Directory creation needs to be done before deploying this stack.  A [Makefile](h
     deploy:    Deploy to docker swarm
     destroy:   Docker stack rm && rm -rf data
     help:      This help dialog
+
+With what's in the source code the stack can be started with:
+
+    sudo make
 
 ## Prometheus
 
@@ -245,3 +247,5 @@ Chose prometheus as data source and hit Import
 
 And dashboard
 ![complete_dashboard](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/complete_dashboard.png)
+
+With that, a very flexible monitoring system has been established across the swarm cluster! A lot can be done to add to it easily, with new data sources and dashboards.

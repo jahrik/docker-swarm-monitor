@@ -2,27 +2,6 @@ version: '3'
 
 services:
 
-#   grafana:
-#     image: grafana/grafana
-#     ports:
-#       - "3000:3000"
-#     volumes:
-#       - ./data/grafana:/var/lib/grafana:rw
-#     deploy:
-#       mode: replicated
-#       replicas: 1
-# 
-#   prometheus:
-#     image: prom/prometheus:latest
-#     ports:
-#       - '9090:9090'
-#     volumes:
-#       - ./data/etc/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-#       - ./data/prometheus:/prometheus:rw
-#     deploy:
-#       mode: replicated
-#       replicas: 1
-
   exporter:
     image: prom/node-exporter:latest
     ports:
@@ -33,3 +12,24 @@ services:
       - /proc:/host/proc:ro
     deploy:
       mode: global
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./data/etc/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./data/prometheus:/prometheus:rw
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data/grafana:/var/lib/grafana:rw
+    deploy:
+      mode: replicated
+      replicas: 1
