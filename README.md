@@ -249,3 +249,12 @@ And dashboard
 ![complete_dashboard](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/complete_dashboard.png)
 
 With that, a very flexible monitoring system has been established across the swarm cluster! A lot can be done to add to it easily, with new data sources and dashboards.
+
+Bring it all down with
+
+    sudo make destroy
+
+    Removing service monitor_exporter
+    Removing service monitor_grafana
+    Removing service monitor_prometheus
+    Removing network monitor_default
