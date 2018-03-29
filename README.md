@@ -235,10 +235,13 @@ Chose prometheus from the drop down
 I used the IP from the host machine in this example
 ![config_host_ip](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/config_host_ip.png)
 
+Go to [grafana.com/dashboards](https://grafana.com/dashboards) to check out the thousands of pre-made dashboards that are out there and find one that will work as a template to build on.  A good one to start with in this project is the [node exporter metrics on docker swarm mode](https://grafana.com/dashboards/1442) dashboard or `1442`
 
-## Cadvisor
+Import this dashboard to Grafana
+![import_dashboard_01](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/import_dashboard_01.png)
 
-## Elasticsearch
-## Logstash
-## Logspout
-## Kibana
+Chose prometheus as data source and hit Import
+![import_dashboard_01](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/import_dashboard_02.png)
+
+And dashboard
+![complete_dashboard](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/complete_dashboard.png)
