@@ -198,7 +198,7 @@ That the server successfully scraping system data, it's now possible to query th
 
 ## Grafana
 
-With Prometheus up and running, it's time to start Grafana.  A volume is created for persistent data.  Will output to 
+With Prometheus up and running, it's time to start Grafana.  A volume is created for persistent data.  Will output to [localhost:3000/](http://localhost:3000/)
 
 **docker-stack.yml**
 
@@ -226,6 +226,14 @@ The default user and password are: `admin` `admin`
 
 ![grafana_login](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/grafana_login.png)
 
+Add a data source
+![config_add_data_source](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/config_add_data_source.png)
+
+Chose prometheus from the drop down
+![config_dropdown_prometheus](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/config_dropdown_prometheus.png)
+
+I used the IP from the host machine in this example
+![config_host_ip](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/config_host_ip.png)
 
 
 ## Cadvisor
