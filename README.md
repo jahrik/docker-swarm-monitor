@@ -196,9 +196,37 @@ That the server successfully scraping system data, it's now possible to query th
 
 ![prometheus_query_01](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/prometheus_query_01.png)
 
-
-
 ## Grafana
+
+With Prometheus up and running, it's time to start Grafana.  A volume is created for persistent data.  Will output to 
+
+**docker-stack.yml**
+
+    grafana:
+      image: grafana/grafana
+      ports:
+        - "3000:3000"
+      volumes:
+        - ./data/grafana:/var/lib/grafana:rw
+      deploy:
+        mode: replicated
+        replicas: 1
+
+Deploy to start Grafana
+
+    docker stack deploy -c docker-stack.yml monitor                                        
+
+    Updating service monitor_exporter (id: ivbddqpnjr7sdxre0gzopney9)
+    Updating service monitor_prometheus (id: q4f07qz2tk3dvic9kc21sa3kq)
+    Creating service monitor_grafana
+
+Browse to [localhost:3000/login](http://localhost:3000/login)
+
+The default user and password are: `admin` `admin`
+
+![grafana_login](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/grafana_login.png)
+
+
 
 ## Cadvisor
 
