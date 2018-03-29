@@ -97,7 +97,7 @@ Check the logs
 
 Browse to [localhost:9100/](http://localhost:9100/) and check it out.
 
-#### IMAGE ####
+[node_exporter](docker-swarm-monitor/images/node_exporter.png)
 
 ### Server
 
