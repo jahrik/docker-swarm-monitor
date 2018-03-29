@@ -174,8 +174,6 @@ Use make to deploy and it will copy this config file to where it needs to go.
 
     make config
 
-**Makefile**
-
     config:
 	    @cp prometheus.yml $(DATA_DIR)/etc/prometheus.yml
 
@@ -189,6 +187,15 @@ With the prometheus server service added to the docker-stack.yml file and everyt
 Browse to [localhost:9090/targets](http://127.0.0.1:9090/targets) to verify connectivity.
 
 ![prometheus_targets](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/prometheus_targets.png)
+
+That the server successfully scraping system data, it's now possible to query the tsdb
+
+    node_cpu{cpu="cpu0"}
+    node_cpu{cpu="cpu0",mode="idle"}
+    etc...
+
+![prometheus_query_01](https://raw.githubusercontent.com/jahrik/docker-swarm-monitor/master/images/prometheus_query_01.png)
+
 
 
 ## Grafana
