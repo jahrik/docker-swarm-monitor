@@ -1,6 +1,6 @@
 # Docker Swarm Monitoring - Part 01 (Node-exporter, Prometheus, and Grafana)
 
-An affective monitoring system can be configured across a Docker Swarm cluster using services managed by swarm itself. Starting with the prometheus node-exporter to gather system info from all host machines running Docker in swarm mode.  Mount the system's directories as docker volumes to accomplish read access.  Prometheus exporter gathers system info such as CPU, memory, and disk usage and exports it to a website that Prometheus server can then scrape every 15 seconds and fill a Time Series Data Base.  With those 2 services in place, Grafana can then be pointed at the Prometheus server to build beautiful graphs and charts!
+An effective monitoring system can be built across a Docker Swarm cluster using services managed by swarm itself. Starting with the prometheus node-exporter to gather system info from all host machines running Docker in swarm mode.  Mount the system's directories as docker volumes to accomplish read access.  Prometheus exporter gathers system info such as CPU, memory, and disk usage and exports it to a website that Prometheus server can then scrape every 15 seconds and fill a Time Series Data Base.  With those 2 services in place, Grafana can then be pointed at the Prometheus server to build beautiful graphs and charts!
 
 Prerequisites: 
 * [Docker Install Docs](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
