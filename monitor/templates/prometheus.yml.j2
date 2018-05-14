@@ -23,7 +23,7 @@ scrape_configs:
     # metrics_path defaults to '/metrics'
     # scheme defaults to 'http'.
     static_configs:
-    - targets: ['localhost:9090']
+    - targets: ['shredder:9090']
 
   # http://exporter:9100/metrics
   - job_name: prometheus-exporter
