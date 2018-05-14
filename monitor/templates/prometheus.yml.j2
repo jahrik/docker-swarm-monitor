@@ -33,7 +33,7 @@ scrape_configs:
     - targets:
       - shredder:9100
 
-  # http://bebop:9101/metrics
+  # http://shredder:9101/metrics
   - job_name: 'pihole'
     scrape_interval: 10s
     metrics_path: '/metrics'
