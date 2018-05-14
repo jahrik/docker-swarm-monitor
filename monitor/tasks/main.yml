@@ -77,7 +77,7 @@
     - docker pull grafana/grafana
     - docker pull prom/prometheus
     - docker pull prom/node-exporter
-    - docker pull povilasv/arm-pihole_exporter
+    - docker pull jahrik/pihole-exporter
 
 - name: deploy the monitor stack to docker swarm
   become: true
@@ -116,13 +116,3 @@
 
 - debug:
     msg: "Stack {{ docker_stack.stdout_lines }}"
-
-# - name: Test for grafana creating db file
-#   wait_for:
-#     path: "{{ monitor_dir }}/grafana/grafana.db"
-#     state: present
-#     timeout: 30
-#     msg: Timed out waiting for grafana
-#
-# docker service logs monitor_grafana | sed '/*The server is now running$/ q'
-# docker service logs monitor_prometheus | sed '/*Waiting...$/ q'

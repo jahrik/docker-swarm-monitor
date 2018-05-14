@@ -1,6 +1,6 @@
 ---
 - hosts: all
   vars:
-    monitor_dir: /shredder_pool
+    monitor_dir: /data
   roles:
     - monitor

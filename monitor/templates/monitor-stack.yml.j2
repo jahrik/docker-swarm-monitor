@@ -35,9 +35,9 @@ services:
       mode: global
 
   pihole-exporter:
-    image: povilasv/arm-pihole_exporter
+    image: jahrik/pihole-exporter
     ports:
       - '9101:9311'
     deploy:
       replicas: 1
-    command: "pihole-exporter -pihole http://bebop"
+    command: "-pihole http://bebop"
