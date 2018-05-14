@@ -1,6 +1,5 @@
 ---
 - name: playbook
   hosts: all
-  tasks:
-  - name: make
-    command: make
+  roles:
+    - monitor
