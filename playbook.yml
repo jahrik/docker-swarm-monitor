@@ -1,5 +1,7 @@
 ---
 - name: playbook
+  vars:
+    monitor_dir: /shredder_pool
   hosts: all
   roles:
     - monitor

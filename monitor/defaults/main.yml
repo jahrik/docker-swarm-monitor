@@ -1,2 +1,3 @@
 ---
 # defaults file for monitor
+monitor_dir: '/data'

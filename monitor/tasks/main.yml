@@ -1,2 +1,106 @@
 ---
-# tasks file for monitor
+# If built in molecule, user will be 'ubuntu'
+# install docker swarm first
+
+- include_tasks: vagrant_swarm.yml
+  when:
+    - ansible_user_id == 'ubuntu'
+
+- name: Create base directory structure
+  become: true
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - "{{ monitor_dir }}"
+    - "{{ monitor_dir }}/stacks"
+
+- name: Create directories for prometheus
+  become: true
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: 65534
+    group: 65534
+    mode: 0755
+  with_items:
+    - "{{ monitor_dir }}/prometheus"
+    - "{{ monitor_dir }}/etc/prometheus"
+
+- name: Create directories for grafana
+  become: true
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: 472
+    group: 472
+    mode: 0755
+  with_items:
+    - "{{ monitor_dir }}/grafana"
+
+- name: Generate config files
+  become: true
+  template:
+    src: prometheus.yml.j2
+    dest: "{{ monitor_dir }}/etc/prometheus/prometheus.yml"
+    mode: 0644
+
+- name: Generate stack file
+  become: true
+  template:
+    src: monitor-stack.yml.j2
+    dest: "{{ monitor_dir }}/stacks/monitor-stack.yml"
+    mode: 0644
+
+- name: update docker images
+  become: true
+  command: "{{ item }}"
+  with_items:
+    - docker pull grafana/grafana
+    - docker pull prom/prometheus
+    - docker pull prom/node-exporter
+
+- name: deploy the monitor stack to docker swarm
+  become: true
+  command: docker stack deploy -c monitor-stack.yml monitor
+  args:
+    chdir: "{{ monitor_dir }}/stacks/"
+
+- name: Wait for prometheus port to come up
+  wait_for:
+    host: "{{ ansible_default_ipv4.address }}"
+    port: 9090
+    timeout: 30
+
+- name: Wait for grafana port to come up
+  wait_for:
+    host: "{{ ansible_default_ipv4.address }}"
+    port: 3000
+    timeout: 30
+
+- name: Wait for prometheus exporter port to come up
+  wait_for:
+    host: "{{ ansible_default_ipv4.address }}"
+    port: 9100
+    timeout: 30
+
+- name: docker stack ps monitor
+  become: true
+  shell: docker stack ps monitor
+  register: docker_stack
+
+- debug:
+    msg: "Stack {{ docker_stack.stdout_lines }}"
+
+# - name: Test for grafana creating db file
+#   wait_for:
+#     path: "{{ monitor_dir }}/grafana/grafana.db"
+#     state: present
+#     timeout: 30
+#     msg: Timed out waiting for grafana
+#
+# docker service logs monitor_grafana | sed '/*The server is now running$/ q'
+# docker service logs monitor_prometheus | sed '/*Waiting...$/ q'
