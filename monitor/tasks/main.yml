@@ -47,6 +47,12 @@
     src: prometheus.yml.j2
     dest: "{{ monitor_dir }}/etc/prometheus/prometheus.yml"
     mode: 0644
+  register: prom_conf
+
+- name: kill prometheus service if conf file changes
+  become: true
+  command: docker service rm monitor_prometheus
+  when: prom_conf.changed
 
 - name: Generate stack file
   become: true
