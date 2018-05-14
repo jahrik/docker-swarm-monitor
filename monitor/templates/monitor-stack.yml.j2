@@ -2,16 +2,15 @@ version: '3'
 
 services:
 
-  exporter:
-    image: prom/node-exporter:latest
+  grafana:
+    image: grafana/grafana
     ports:
-      - '9100:9100'
+      - "3000:3000"
     volumes:
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-      - /proc:/host/proc:ro
+      - {{ monitor_dir }}/grafana:/var/lib/grafana:rw
     deploy:
-      mode: global
+      mode: replicated
+      replicas: 1
 
   prometheus:
     image: prom/prometheus:latest
@@ -24,12 +23,21 @@ services:
       mode: replicated
       replicas: 1
 
-  grafana:
-    image: grafana/grafana
+  exporter:
+    image: prom/node-exporter:latest
     ports:
-      - "3000:3000"
+      - '9100:9100'
     volumes:
-      - {{ monitor_dir }}/grafana:/var/lib/grafana:rw
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /proc:/host/proc:ro
     deploy:
-      mode: replicated
+      mode: global
+
+  pihole-exporter:
+    image: povilasv/arm-pihole_exporter
+    ports:
+      - '9101:9311'
+    deploy:
       replicas: 1
+    command: "pihole-exporter -pihole http://bebop"

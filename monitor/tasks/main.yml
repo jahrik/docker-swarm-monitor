@@ -49,10 +49,19 @@
     mode: 0644
   register: prom_conf
 
+- name: Check if prometheus is running
+  ignore_errors: true
+  uri:
+    url: "http://{{ ansible_default_ipv4.address }}:9090/graph"
+    status_code: 200
+  register: result
+
 - name: kill prometheus service if conf file changes
   become: true
   command: docker service rm monitor_prometheus
-  when: prom_conf.changed
+  when:
+    - result.status == 200
+    - prom_conf.changed
 
 - name: Generate stack file
   become: true
@@ -68,6 +77,7 @@
     - docker pull grafana/grafana
     - docker pull prom/prometheus
     - docker pull prom/node-exporter
+    - docker pull povilasv/arm-pihole_exporter
 
 - name: deploy the monitor stack to docker swarm
   become: true
@@ -91,6 +101,12 @@
   wait_for:
     host: "{{ ansible_default_ipv4.address }}"
     port: 9100
+    timeout: 30
+
+- name: Wait for pihole exporter port to come up
+  wait_for:
+    host: "{{ ansible_default_ipv4.address }}"
+    port: 9101
     timeout: 30
 
 - name: docker stack ps monitor
