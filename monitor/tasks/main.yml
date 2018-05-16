@@ -26,7 +26,7 @@
     owner: 65534
     group: 65534
     mode: 0755
-    recurse: yes
+    # recurse: yes
   with_items:
     - "{{ monitor_dir }}/prometheus"
     - "{{ monitor_dir }}/etc/prometheus"
@@ -39,7 +39,7 @@
     owner: 472
     group: 472
     mode: 0755
-    recurse: yes
+    # recurse: yes
   with_items:
     - "{{ monitor_dir }}/grafana"
 
