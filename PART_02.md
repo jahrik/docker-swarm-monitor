@@ -83,7 +83,7 @@ Here's what the Ansible task handling this now, looks like.
 
 ### Prometheus
 
-When you make an update to the prometheus.yml file, the desired action is for the Prometheus server to be restarted.  Because I'm deploying this with Ansible, I also need to handle the restarting of this service the same way and add in a couple of checks along the way.  [This Ansible playbook can be found here](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/tasks/main.yml).
+When you make an update to the prometheus.yml file, the desired action is for the Prometheus server to be restarted.  Because I'm deploying this in an automated fashion, I need to handle the restarting of this service the same way and add in a couple of checks along the way.  [This Ansible playbook can be found here](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/tasks/main.yml).
 
 *It all goes like this:*
 
@@ -137,8 +137,46 @@ I've also added a check at the end of the playbook to make sure Prometheus is ru
 [Cadvisor](https://github.com/google/cadvisor) will export metrics from the container service running.
 > cAdvisor has native support for Docker containers and should support just about any other container type out of the box. 
 
-Without Cadvisor running the [Docker-swarm-monitor dashboard](https://grafana.com/dashboards/2603) will look a bit like this.
+While running node_exporter alone and not Cadvisor yet, the [Docker-swarm-monitor dashboard](https://grafana.com/dashboards/2603) will look a bit like this.
 ![grafana_docker_swarm_dashboard_before.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/grafana_docker_swarm_dashboard_before.png?raw=true)
+
+Add Cadvisor to the [monitor-stack.yml]() file.
+
+      ...
+      ...
+      cadvisor:
+        image: google/cadvisor:latest
+        ports:
+          - '9105:8080'
+        volumes:
+          - /var/lib/docker/:/var/lib/docker
+          - /dev/disk/:/dev/disk
+          - /sys:/sys
+          - /var/run:/var/run
+          - /:/rootfs
+          - /dev/zfs:/dev/zfs
+        deploy:
+          mode: global
+          resources:
+            limits:
+              cpus: '0.50'
+              memory: 1024M
+            reservations:
+              cpus: '0.25'
+              memory: 512M
+          update_config:
+            parallelism: 3
+            monitor: 2m
+            max_failure_ratio: 0.3
+            failure_action: rollback
+            delay: 30s
+          restart_policy:
+            condition: on-failure
+            delay: 5s
+            max_attempts: 3
+      ...
+      ...
+
 
 ## Pihole
 ## Pihole exporter
