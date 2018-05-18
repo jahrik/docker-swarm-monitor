@@ -195,6 +195,10 @@ With that deployment, a new target should be added to `Prometheus > targets`
 
 ![prometheus_targets.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/prometheus_targets.png?raw=true)
 
+Refresh the docker swarm monitor dashboard and there should be a lot more info now!
+
+![grafana_docker_swarm_dashboard_with_cadvisor.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/grafana_docker_swarm_dashboard_with_cadvisor.png?raw=true)
+
 ## Pihole
 ## Pihole exporter
 ## Node exporter
