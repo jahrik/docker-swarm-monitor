@@ -140,43 +140,56 @@ I've also added a check at the end of the playbook to make sure Prometheus is ru
 While running node_exporter alone and not Cadvisor yet, the [Docker-swarm-monitor dashboard](https://grafana.com/dashboards/2603) will look a bit like this.
 ![grafana_docker_swarm_dashboard_before.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/grafana_docker_swarm_dashboard_before.png?raw=true)
 
-Add Cadvisor to the [monitor-stack.yml]() file.
+Add Cadvisor to the [monitor-stack.yml](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/templates/monitor-stack.yml.j2) file.
 
-      ...
-      ...
-      cadvisor:
-        image: google/cadvisor:latest
-        ports:
-          - '9105:8080'
-        volumes:
-          - /var/lib/docker/:/var/lib/docker
-          - /dev/disk/:/dev/disk
-          - /sys:/sys
-          - /var/run:/var/run
-          - /:/rootfs
-          - /dev/zfs:/dev/zfs
-        deploy:
-          mode: global
-          resources:
-            limits:
-              cpus: '0.50'
-              memory: 1024M
-            reservations:
-              cpus: '0.25'
-              memory: 512M
-          update_config:
-            parallelism: 3
-            monitor: 2m
-            max_failure_ratio: 0.3
-            failure_action: rollback
-            delay: 30s
-          restart_policy:
-            condition: on-failure
-            delay: 5s
-            max_attempts: 3
-      ...
-      ...
+    cadvisor:
+      image: google/cadvisor:latest
+      ports:
+        - '9105:8080'
+      volumes:
+        - /var/lib/docker/:/var/lib/docker
+        - /dev/disk/:/dev/disk
+        - /sys:/sys
+        - /var/run:/var/run
+        - /:/rootfs
+        - /dev/zfs:/dev/zfs
+      deploy:
+        mode: global
+        resources:
+          limits:
+            cpus: '0.50'
+            memory: 1024M
+          reservations:
+            cpus: '0.25'
+            memory: 512M
+        update_config:
+          parallelism: 3
+          monitor: 2m
+          max_failure_ratio: 0.3
+          failure_action: rollback
+          delay: 30s
+        restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 3
 
+Because I'm deploying this with a [webhook to jenkins](https://homelab.business/ark-jenkins-ansible-swarm/#webhook), [the commit that added this ^ to the stack](https://github.com/jahrik/docker-swarm-monitor/commit/ccc13342b8c58a08ce8da8488f2b414cc296f2a7) file deployed Cadvisor to the Swarm, as I'm writing this.
+
+cadvisor_exporter.png
+
+Cadvisor is now viewable at [docker_host:9102/containers](docker_host:9102/containers/)
+
+![cadvisor_exporter.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/cadvisor_exporter.png?raw=true)
+
+Create a job in the [prometheus.yml](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/templates/prometheus.yml.j2) file to import data from Cadvisor.
+
+    # http://shredder:9102/containers/
+    - job_name: 'cadvisor'
+      scrape_interval: 30s
+      metrics_path: '/containers'
+      static_configs:
+      - targets:
+        - docker_host:9102
 
 ## Pihole
 ## Pihole exporter
