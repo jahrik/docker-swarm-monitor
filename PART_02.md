@@ -191,6 +191,10 @@ Create a job in the [prometheus.yml](https://github.com/jahrik/docker-swarm-moni
       - targets:
         - docker_host:9102
 
+With that deployment, a new target should be added to `Prometheus > targets`
+
+![prometheus_targets.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/prometheus_targets.png?raw=true)
+
 ## Pihole
 ## Pihole exporter
 ## Node exporter
