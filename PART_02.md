@@ -173,9 +173,7 @@ Add Cadvisor to the [monitor-stack.yml](https://github.com/jahrik/docker-swarm-m
           delay: 5s
           max_attempts: 3
 
-Because I'm deploying this with a [webhook to jenkins](https://homelab.business/ark-jenkins-ansible-swarm/#webhook), [the commit that added this ^ to the stack](https://github.com/jahrik/docker-swarm-monitor/commit/ccc13342b8c58a08ce8da8488f2b414cc296f2a7) file deployed Cadvisor to the Swarm, as I'm writing this.
-
-cadvisor_exporter.png
+Because I'm deploying this with a [webhook to jenkins](https://homelab.business/ark-jenkins-ansible-swarm/#webhook), the [commit](https://github.com/jahrik/docker-swarm-monitor/commit/ccc13342b8c58a08ce8da8488f2b414cc296f2a7) that added this ^ to the stack file deployed Cadvisor to the Swarm, as I'm writing this.
 
 Cadvisor is now viewable at [docker_host:9102/containers](docker_host:9102/containers/)
 
@@ -183,10 +181,10 @@ Cadvisor is now viewable at [docker_host:9102/containers](docker_host:9102/conta
 
 Create a job in the [prometheus.yml](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/templates/prometheus.yml.j2) file to import data from Cadvisor.
 
-    # http://shredder:9102/containers/
+    # http://shredder:9102/metrics/
     - job_name: 'cadvisor'
       scrape_interval: 30s
-      metrics_path: '/containers'
+      metrics_path: '/metrics'
       static_configs:
       - targets:
         - docker_host:9102
@@ -200,5 +198,6 @@ Refresh the docker swarm monitor dashboard and there should be a lot more info n
 ![grafana_docker_swarm_dashboard_with_cadvisor.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/grafana_docker_swarm_dashboard_with_cadvisor.png?raw=true)
 
 ## Pihole
+
 ## Pihole exporter
 ## Node exporter
