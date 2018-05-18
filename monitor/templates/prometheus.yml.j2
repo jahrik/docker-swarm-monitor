@@ -41,10 +41,10 @@ scrape_configs:
     - targets:
       - shredder:9101
 
-  # http://shredder:9102/containers/
+  # http://shredder:9102/metrics/
   - job_name: 'cadvisor'
     scrape_interval: 30s
-    metrics_path: '/containers'
+    metrics_path: '/metrics'
     static_configs:
     - targets:
       - shredder:9102
