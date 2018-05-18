@@ -30,7 +30,7 @@ node('master') {
                     verbose: true,
                     credential: '',
                     extraVars: '''---
-                      admin_pass: "password"'''
+                      test: "test"'''
                 )
             }
         }
