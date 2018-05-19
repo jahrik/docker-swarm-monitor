@@ -6,7 +6,7 @@ Since part 01, I have added enough to [deploy this to Docker Swarm](https://gith
 
 ## Fixes
 
-A few things I've learned along the way.
+A few things I've learned along the way since part 01.
 
 ### Grafana
 
@@ -58,10 +58,6 @@ Kill and restart the grafana service
     docker service rm monitor_grafana 
 
     docker stack deploy -c monitor-stack.yml monitor
-    Creating service monitor_grafana
-    Updating service monitor_prometheus
-    Updating service monitor_exporter
-    Updating service monitor_pihole-exporter
 
 Write access is restored.
 
@@ -106,7 +102,7 @@ A check to see if Prometheus is running or not with the [uri module](http://docs
         status_code: 200
       register: result
 
-With these two checks in place, there is enough information to determine if the prometheus server needs to be restarted or not.  With a when statement that contains more that one thing, `when: ['one_thing','two_thing']`, both values have to be true before this task is kicked off. If the variable `prom_conf` comes back with a `.changed` status of `true` this will be passed on as true.  Same goes for the `result.status`, if it == 200 it will return `true`.
+With these two checks in place, there is enough information to determine if the prometheus server needs to be restarted or not.  With a when statement that contains more than one thing, `when: ['one_thing','two_thing']`, both values have to be true before this task is kicked off. If the variable `prom_conf` comes back with a `.changed` status of `true` this will be passed on as true.  Same goes for the `result.status`, if it == 200 it will return `true`.
 
     - name: kill prometheus service if conf file changes
       become: true
@@ -131,6 +127,14 @@ I've also added a check at the end of the playbook to make sure Prometheus is ru
         host: "{{ ansible_default_ipv4.address }}"
         port: 9090
         timeout: 30
+
+### Node Exporter
+
+I'm seeing the following from `docker service logs -f monitor_exporter`.  I would like node exporter to ignore docker volume mounts.  Ignoring all of /var/lib/docker would be ok with me for now to clean up this error, but I haven't figured out where to configure that yet.  It's on the TODO list.
+
+    time="2018-05-19T08:33:59Z" level=error msg="Error on statfs() system call for \"/rootfs/var/lib/docker/overlay2/f8da180fa939589132d04099a37c9f182bc0b38e84d0b84ee8958fe42aa5e18d/merged\": permission denied" source="filesystem_linux.go:57"
+    time="2018-05-19T08:33:59Z" level=error msg="Error on statfs() system call for \"/rootfs/var/lib/docker/containers/01358918338b67982715107fe876b803abbcd0c57f4672c07de0025d1426f2af/mounts/shm\": permission denied" source="filesystem_linux.go:57"
+    time="2018-05-19T08:33:59Z" level=error msg="Error on statfs() system call for \"/rootfs/run/docker/netns/a2d163e99d44\": permission denied" source="filesystem_linux.go:57"
 
 ## Cadvisor
 
@@ -175,7 +179,7 @@ Add Cadvisor to the [monitor-stack.yml](https://github.com/jahrik/docker-swarm-m
 
 Because I'm deploying this with a [webhook to jenkins](https://homelab.business/ark-jenkins-ansible-swarm/#webhook), the [commit](https://github.com/jahrik/docker-swarm-monitor/commit/ccc13342b8c58a08ce8da8488f2b414cc296f2a7) that added this ^ to the stack file deployed Cadvisor to the Swarm, as I'm writing this.
 
-Cadvisor is now viewable at [docker_host:9102/containers](docker_host:9102/containers/)
+Cadvisor is viewable at [docker_host:9102/containers](docker_host:9102/containers/)
 
 ![cadvisor_exporter.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/cadvisor_exporter.png?raw=true)
 
@@ -189,7 +193,7 @@ Create a job in the [prometheus.yml](https://github.com/jahrik/docker-swarm-moni
       - targets:
         - docker_host:9102
 
-With that deployment, a new target should be added to `Prometheus > targets`
+With that deployed, a new target is added to `Prometheus > targets`, [docker_host:9090/targets](docker_host:9090/targets/)
 
 ![prometheus_targets.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/prometheus_targets.png?raw=true)
 
@@ -198,6 +202,12 @@ Refresh the docker swarm monitor dashboard and there should be a lot more info n
 ![grafana_docker_swarm_dashboard_with_cadvisor.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/grafana_docker_swarm_dashboard_with_cadvisor.png?raw=true)
 
 ## Pihole
+
+[Pi-Hole](https://github.com/pi-hole/pi-hole) is running on a raspberry pi. It acts as the DNS and DHCP server for the network, while caching DNS queries and providing "a [DNS sinkhole](https://en.wikipedia.org/wiki/DNS_sinkhole) that protects your devices from unwanted content, without installing any client-side software."  It blocks a surprising amount of ad content from things like Facebook, news sites, and blog posts, like this one, which uses Google Adsense. It worked well enough, in-fact, I had to add google analytics to the whitelist after setting this up to access the site and check metrics.
+
+![pihole.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/pihole.png?raw=true)
+
+Seeing the results and experiencing an increase in query speeds, was worth the hour or so of fussing with pfsense. Finally, disabling DHCP and DNS forwarding altogether on the firewall and just letting Pi-Hole handle it worked.  The dashboard that comes with pihole is great and really all you need for this service, but it's also nice to have in a central location with other monitoring tools and graphs.  One way to accomplish this is with the [pihole_exporter](https://github.com/nlamirault/pihole_exporter) for prometheus.  I fought with this for a couple of hours before getting it to work.  Eventually building it from source with docker and pushing it up to docker hub to pull into swarm.
 
 ## Pihole exporter
 ## Node exporter
