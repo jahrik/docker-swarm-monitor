@@ -1,6 +1,6 @@
 # Docker Swarm monitoring - part 02 (Fixes, Cadvisor, Pihole, and dashboards galore)
 
-In [part 01](https://homelab.business/docker-swarm-monitoring-part-01/), I deployed [node exporter](https://github.com/prometheus/node_exporter), [Prometheus](https://github.com/prometheus/prometheus), and [Grafana](https://grafana.com/).  This time around, I will mention some of the problems I've run into since then and tack on another monitoring tool to the stack, [Cadvisor](https://github.com/google/cadvisor).  While I'm at it, I'll also forward [Pi-Hole](https://pi-hole.net/) metrics to a Grafana dashboard and put together an example Prometheus client with Python to monitor the temperature of my server with [lm_sensors](https://wiki.archlinux.org/index.php/lm_sensors) or [PySensors](https://pypi.org/project/PySensors/#description) and output that to a gauge in Grafana.
+In [part 01](https://homelab.business/docker-swarm-monitoring-part-01/), I deployed [node exporter](https://github.com/prometheus/node_exporter), [Prometheus](https://github.com/prometheus/prometheus), and [Grafana](https://grafana.com/).  This time around, I will mention some of the problems I've run into since then and how I solved them. I'll tack on another monitoring tool to the stack, [Cadvisor](https://github.com/google/cadvisor).  While I'm at it, I'll also forward [Pi-Hole](https://pi-hole.net/) metrics to a Grafana dashboard and put together an example Prometheus client with Python to monitor the temperature of my server with [lm_sensors](https://wiki.archlinux.org/index.php/lm_sensors) or [PySensors](https://pypi.org/project/PySensors/#description) and output that to a gauge in Grafana.
 
 Since part 01, I have added enough to [deploy this to Docker Swarm](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/templates/monitor-stack.yml.j2) using a [Jenkins pipeline](https://github.com/jahrik/docker-swarm-monitor/blob/master/Jenkinsfile) and [Ansible playbook](https://github.com/jahrik/docker-swarm-monitor/blob/master/playbook.yml).  This workflow lets me push my changes to github, have Jenkins handle building and testing, then push to production with Ansible AWX.  There is a [write-up on doing the same thing with an Ark server](https://homelab.business/ark-jenkins-ansible-swarm/), if you need more information on how all those pieces fit together.
 
@@ -144,11 +144,11 @@ I'm seeing the following from `docker service logs -f monitor_exporter`.  I woul
     time="2018-05-19T08:33:59Z" level=error msg="Error on statfs() system call for \"/rootfs/var/lib/docker/containers/01358918338b67982715107fe876b803abbcd0c57f4672c07de0025d1426f2af/mounts/shm\": permission denied" source="filesystem_linux.go:57"
     time="2018-05-19T08:33:59Z" level=error msg="Error on statfs() system call for \"/rootfs/run/docker/netns/a2d163e99d44\": permission denied" source="filesystem_linux.go:57"
 
-Out of the box, the [Node - ZFS](https://grafana.com/dashboards/3170) and [Node - ZFS all](https://grafana.com/dashboards/3161) dashboards rely on a very specific variable by default to work.  At first I had the Prometheus job name as 'node-exporter' in the prometheus.yml file, but this dashboard is relying on it being just 'node' and using that as a variable.
+Out of the box, the [Node - ZFS](https://grafana.com/dashboards/3170) and [Node - ZFS all](https://grafana.com/dashboards/3161) dashboards rely on a specific job name to work.  At first I had the Prometheus job name as 'node-exporter' in the prometheus.yml file, but this dashboard is relying on it being just 'node' and using that as a variable.
 
 ![grafana_zfs_job_node.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/grafana_zfs_job_node.png?raw=true)
 
-The entry in the [prometheus.yml](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/templates/prometheus.yml.j2) file now just uses a job name of `node`, so it works with the zfs dashboards.
+The entry in the [prometheus.yml](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/templates/prometheus.yml.j2) file uses a job name of `node` to work with the zfs dashboards.
 
     # http://docker_host:9100/metrics
     - job_name: 'node'
@@ -231,7 +231,7 @@ Refresh the docker swarm monitor dashboard and there should be a lot more info n
 
 ![pihole.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/pihole.png?raw=true)
 
-Seeing the results and experiencing an increase in query speeds, was worth the hour or so of fussing with pfsense. Finally, disabling DHCP and DNS forwarding altogether on the firewall and just letting Pi-Hole handle it, worked.  The dashboard that comes with pihole is great and really all you need for this service, but it's also nice to have in a central location with other monitoring tools and graphs.
+Seeing the results and experiencing an increase in query speeds, was worth the hour or so of fussing with pfsense. Finally, disabling DHCP and DNS forwarding altogether on the firewall and just letting Pi-Hole handle it, worked.  The dashboard that comes with pihole is great and really all you need for this service, but it's also nice to have these metrics in the same location as other monitoring tools and graphs.
 
 ### Pihole exporter
 
@@ -239,8 +239,7 @@ Seeing the results and experiencing an increase in query speeds, was worth the h
 
 One way to accomplish this is with the [pihole_exporter](https://github.com/nlamirault/pihole_exporter) for prometheus.  I fought with this for a good hour before getting it to work.  Eventually building it from source with docker and pushing it up to docker hub to pull into swarm at stack creation time.
 
-
-This is the error I kept seeing when using the latest version in docker hub, `standard_init_linux.go:190: exec user process caused "exec format error"`, and can be reproduced like this.
+This is the error I kept seeing when using the latest version in docker hub: `standard_init_linux.go:190: exec user process caused "exec format error"`, and can be reproduced like this.
 
     docker run -it povilasv/arm-pihole_exporter -pihole http://pihole_host_ip
 
@@ -258,6 +257,7 @@ And build it with docker
 
     Sending build context to Docker daemon  5.881MB
     Step 1/11 : FROM golang:alpine AS build
+    ...
     ...
     ...
     ...
