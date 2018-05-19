@@ -1,6 +1,6 @@
 # Docker Swarm monitoring - part 02 (Fixes, Cadvisor, Pihole, and dashboards galore)
 
-In [part 01](https://homelab.business/docker-swarm-monitoring-part-01/), I deployed [node exporter](https://github.com/prometheus/node_exporter), [Prometheus](https://github.com/prometheus/prometheus), and [Grafana](https://grafana.com/).  This time around, I will mention some of the problems I've run into since then and tack on another monitoring tool to the stack, [Cadvisor](https://github.com/google/cadvisor).  While I'm at it, I'll also forward [Pi-Hole](https://pi-hole.net/) metrics to a custom dashboard and put together an example Prometheus client with Python to monitor the temperature of my server with [lm_sensors](https://wiki.archlinux.org/index.php/lm_sensors) or [PySensors](https://pypi.org/project/PySensors/#description) and output that to a gauge in Grafana.
+In [part 01](https://homelab.business/docker-swarm-monitoring-part-01/), I deployed [node exporter](https://github.com/prometheus/node_exporter), [Prometheus](https://github.com/prometheus/prometheus), and [Grafana](https://grafana.com/).  This time around, I will mention some of the problems I've run into since then and tack on another monitoring tool to the stack, [Cadvisor](https://github.com/google/cadvisor).  While I'm at it, I'll also forward [Pi-Hole](https://pi-hole.net/) metrics to a Grafana dashboard and put together an example Prometheus client with Python to monitor the temperature of my server with [lm_sensors](https://wiki.archlinux.org/index.php/lm_sensors) or [PySensors](https://pypi.org/project/PySensors/#description) and output that to a gauge in Grafana.
 
 Since part 01, I have added enough to [deploy this to Docker Swarm](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/templates/monitor-stack.yml.j2) using a [Jenkins pipeline](https://github.com/jahrik/docker-swarm-monitor/blob/master/Jenkinsfile) and [Ansible playbook](https://github.com/jahrik/docker-swarm-monitor/blob/master/playbook.yml).  This workflow lets me push my changes to github, have Jenkins handle building and testing, then push to production with Ansible AWX.  There is a [write-up on doing the same thing with an Ark server](https://homelab.business/ark-jenkins-ansible-swarm/), if you need more information on how all those pieces fit together.
 
@@ -89,7 +89,7 @@ Here's what the Ansible task handling this now, looks like.
 
 When you make an update to the prometheus.yml file, the desired action is for the Prometheus server to be restarted.  Because I'm deploying this in an automated fashion, I need to handle the restarting of this service the same way and add in a couple of checks along the way.  [This Ansible playbook can be found here](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/tasks/main.yml).
 
-*It all goes like this:*
+**It all goes like this:**
 
 The config file is generated and registers a variable, `prom_conf` containing information about the file in question, `prometheus.yml`, including information on whether the file has been changed this run or not.
 
@@ -138,7 +138,7 @@ I've also added a check at the end of the playbook to make sure Prometheus is ru
 
 ### Node Exporter
 
-I'm seeing the following from `docker service logs -f monitor_exporter`.  I would like node exporter to ignore docker volume mounts.  Ignoring all of /var/lib/docker would be ok with me for now to clean up this error, but I haven't figured out where to configure that yet.  It's on the *TODO* list.
+I'm seeing the following from `docker service logs -f monitor_exporter`.  I would like node exporter to ignore docker volume mounts.  Ignoring all of /var/lib/docker would be ok with me for now to clean up this error, but I haven't figured out where to configure that yet.  It's on the **TODO** list.
 
     time="2018-05-19T08:33:59Z" level=error msg="Error on statfs() system call for \"/rootfs/var/lib/docker/overlay2/f8da180fa939589132d04099a37c9f182bc0b38e84d0b84ee8958fe42aa5e18d/merged\": permission denied" source="filesystem_linux.go:57"
     time="2018-05-19T08:33:59Z" level=error msg="Error on statfs() system call for \"/rootfs/var/lib/docker/containers/01358918338b67982715107fe876b803abbcd0c57f4672c07de0025d1426f2af/mounts/shm\": permission denied" source="filesystem_linux.go:57"
@@ -146,17 +146,17 @@ I'm seeing the following from `docker service logs -f monitor_exporter`.  I woul
 
 Out of the box, the [Node - ZFS](https://grafana.com/dashboards/3170) and [Node - ZFS all](https://grafana.com/dashboards/3161) dashboards rely on a very specific variable by default to work.  At first I had the Prometheus job name as 'node-exporter' in the prometheus.yml file, but this dashboard is relying on it being just 'node' and using that as a variable.
 
-![pihole_exporter.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/pihole_exporter.png?raw=true)
+![grafana_zfs_job_node.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/grafana_zfs_job_node.png?raw=true)
 
 The entry in the [prometheus.yml](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/templates/prometheus.yml.j2) file now just uses a job name of `node`, so it works with the zfs dashboards.
 
-  # http://docker_host:9100/metrics
-  - job_name: 'node'
-    scrape_interval: 10s
-    metrics_path: '/metrics'
-    static_configs:
-    - targets:
-      - docker_host:9100
+    # http://docker_host:9100/metrics
+    - job_name: 'node'
+      scrape_interval: 10s
+      metrics_path: '/metrics'
+      static_configs:
+      - targets:
+        - docker_host:9100
 
 * [Node Exporter Full](https://grafana.com/dashboards/1860)
 
@@ -235,7 +235,7 @@ Seeing the results and experiencing an increase in query speeds, was worth the h
 
 ### Pihole exporter
 
-*where pihole_host_ip is the ip or hostname of pihole*
+**where pihole_host_ip is the ip or hostname of pihole**
 
 One way to accomplish this is with the [pihole_exporter](https://github.com/nlamirault/pihole_exporter) for prometheus.  I fought with this for a good hour before getting it to work.  Eventually building it from source with docker and pushing it up to docker hub to pull into swarm at stack creation time.
 
