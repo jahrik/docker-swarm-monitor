@@ -1,4 +1,4 @@
-# Docker Swarm monitoring - part 02 (Fixes, Cadvisor, Pihole, and dashboards galore)
+# Docker Swarm monitoring - part 02 (Fixes, Cadvisor, and Pihole)
 
 In [part 01](https://homelab.business/docker-swarm-monitoring-part-01/), I deployed [node exporter](https://github.com/prometheus/node_exporter), [Prometheus](https://github.com/prometheus/prometheus), and [Grafana](https://grafana.com/).  This time around, I will touch on some of the problems I've run into since then and how I solved them. I'll tack on another monitoring tool to the stack, [Cadvisor](https://github.com/google/cadvisor).  Finally, I'll forward [Pi-Hole](https://pi-hole.net/) metrics to a Grafana dashboard.
 
