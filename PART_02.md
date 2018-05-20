@@ -1,22 +1,17 @@
 # Docker Swarm monitoring - part 02 (Fixes, Cadvisor, Pihole, and dashboards galore)
 
-In [part 01](https://homelab.business/docker-swarm-monitoring-part-01/), I deployed [node exporter](https://github.com/prometheus/node_exporter), [Prometheus](https://github.com/prometheus/prometheus), and [Grafana](https://grafana.com/).  This time around, I will mention some of the problems I've run into since then and how I solved them. I'll tack on another monitoring tool to the stack, [Cadvisor](https://github.com/google/cadvisor).  Finally, I'll forward [Pi-Hole](https://pi-hole.net/) metrics to a Grafana dashboard.
+In [part 01](https://homelab.business/docker-swarm-monitoring-part-01/), I deployed [node exporter](https://github.com/prometheus/node_exporter), [Prometheus](https://github.com/prometheus/prometheus), and [Grafana](https://grafana.com/).  This time around, I will disclose some of the problems I've run into since then and how I solved them. I'll tack on another monitoring tool to the stack, [Cadvisor](https://github.com/google/cadvisor).  Finally, I'll forward [Pi-Hole](https://pi-hole.net/) metrics to a Grafana dashboard.
 
-Since part 01, I have added enough to [deploy this to Docker Swarm](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/templates/monitor-stack.yml.j2) using a [Jenkins pipeline](https://github.com/jahrik/docker-swarm-monitor/blob/master/Jenkinsfile) and [Ansible playbook](https://github.com/jahrik/docker-swarm-monitor/blob/master/playbook.yml).  This workflow lets me push my changes to github, have Jenkins handle building and testing, then push to production with Ansible AWX.  There is a [write-up on doing the same thing with an Ark server](https://homelab.business/ark-jenkins-ansible-swarm/), if you need more information on how all those pieces fit together.
+Since part 01, I have added enough to [deploy this to Docker Swarm](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/templates/monitor-stack.yml.j2) using a [Jenkins pipeline](https://github.com/jahrik/docker-swarm-monitor/blob/master/Jenkinsfile) and [Ansible playbook](https://github.com/jahrik/docker-swarm-monitor/blob/master/playbook.yml).  This workflow lets me push my changes to github, have Jenkins handle building and testing, then push configuration and deploy to Docker Swarm with Ansible AWX.  There is a [write-up on doing the same thing with an Ark server](https://homelab.business/ark-jenkins-ansible-swarm/), if you need more information on how all those pieces fit together.
 
-* [Fixes](#fixes)
-   * [Grafana](#grafana)
-   * [Prometheus](#prometheus)
-   * [Node Exporter](#node-exporter)
+* [Grafana](#grafana)
+* [Prometheus](#prometheus)
+* [Node Exporter](#node-exporter)
 * [Cadvisor](#cadvisor)
 * [Pihole](#pihole)
-   * [Pihole exporter](#pihole-exporter)
+* [Pihole exporter](#pihole-exporter)
 
-## Fixes
-
-A few things I've learned along the way since part 01.
-
-### Grafana
+## Grafana
 
 I changed the permission to the Grafana SQLite.db file and it was still able to read data, but I wasn't able to save anything.  Somewhere along the line I ended up running `chown 1000:1000 /data/grafana/grafana.db`, Grafana did not like that.
 
@@ -85,7 +80,7 @@ Here's what the Ansible task handling this now, looks like.
       with_items:
         - "{{ monitor_dir }}/grafana"
 
-### Prometheus
+## Prometheus
 
 When you make an update to the prometheus.yml file, the desired action is for the Prometheus server to be restarted.  Because I'm deploying this in an automated fashion, I need to handle the restarting of this service the same way and add in a couple of checks along the way.  [This Ansible playbook can be found here](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/tasks/main.yml).
 
@@ -136,7 +131,7 @@ I've also added a check at the end of the playbook to make sure Prometheus is ru
         port: 9090
         timeout: 30
 
-### Node Exporter
+## Node Exporter
 
 I'm seeing the following from `docker service logs -f monitor_exporter`.  I would like node exporter to ignore docker volume mounts.  Ignoring all of /var/lib/docker would be ok with me for now to clean up this error, but I haven't figured out where to configure that yet.  It's on the **TODO** list.
 
@@ -233,7 +228,7 @@ Refresh the docker swarm monitor dashboard and there should be a lot more info n
 
 Seeing the results and experiencing an increase in query speeds, was worth the hour or so of fussing with pfsense. Finally, disabling DHCP and DNS forwarding altogether on the firewall and just letting Pi-Hole handle it, worked.  The dashboard that comes with pihole is great and really all you need for this service, but it's also nice to have these metrics in the same location as other monitoring tools and graphs.
 
-### Pihole exporter
+## Pihole exporter
 
 **where pihole_host_ip is the ip or hostname of pihole**
 
