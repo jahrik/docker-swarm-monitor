@@ -1,6 +1,6 @@
 # Docker Swarm monitoring - part 02 (Fixes, Cadvisor, Pihole, and dashboards galore)
 
-In [part 01](https://homelab.business/docker-swarm-monitoring-part-01/), I deployed [node exporter](https://github.com/prometheus/node_exporter), [Prometheus](https://github.com/prometheus/prometheus), and [Grafana](https://grafana.com/).  This time around, I will disclose some of the problems I've run into since then and how I solved them. I'll tack on another monitoring tool to the stack, [Cadvisor](https://github.com/google/cadvisor).  Finally, I'll forward [Pi-Hole](https://pi-hole.net/) metrics to a Grafana dashboard.
+In [part 01](https://homelab.business/docker-swarm-monitoring-part-01/), I deployed [node exporter](https://github.com/prometheus/node_exporter), [Prometheus](https://github.com/prometheus/prometheus), and [Grafana](https://grafana.com/).  This time around, I will touch on some of the problems I've run into since then and how I solved them. I'll tack on another monitoring tool to the stack, [Cadvisor](https://github.com/google/cadvisor).  Finally, I'll forward [Pi-Hole](https://pi-hole.net/) metrics to a Grafana dashboard.
 
 Since part 01, I have added enough to [deploy this to Docker Swarm](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/templates/monitor-stack.yml.j2) using a [Jenkins pipeline](https://github.com/jahrik/docker-swarm-monitor/blob/master/Jenkinsfile) and [Ansible playbook](https://github.com/jahrik/docker-swarm-monitor/blob/master/playbook.yml).  This workflow lets me push my changes to github, have Jenkins handle building and testing, then push configuration and deploy to Docker Swarm with Ansible AWX.  There is a [write-up on doing the same thing with an Ark server](https://homelab.business/ark-jenkins-ansible-swarm/), if you need more information on how all those pieces fit together.
 
@@ -13,7 +13,7 @@ Since part 01, I have added enough to [deploy this to Docker Swarm](https://gith
 
 ## Grafana
 
-I changed the permission to the Grafana SQLite.db file and it was still able to read data, but I wasn't able to save anything.  Somewhere along the line I ended up running `chown 1000:1000 /data/grafana/grafana.db`, Grafana did not like that.
+Somehow, I ended up changing the permissions to the Grafana SQLite.db file and it was still able to read data, but I wasn't able to save anything.  Somewhere along the line, maybe I ran a command close to this? `chown 1000:1000 /data/grafana/grafana.db`. Grafana didn't like it.
 
 ![grafana_save_dashboard_error.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/grafana_save_dashboard_error.png?raw=true)
 
@@ -66,7 +66,7 @@ Write access is restored.
 
 ![grafana_save_dashboard.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/grafana_save_dashboard.png?raw=true)
 
-Here's what the Ansible task handling this now, looks like.
+Here's an Ansible task to handle this.
 
     - name: Create directories for grafana
       become: true
@@ -76,15 +76,24 @@ Here's what the Ansible task handling this now, looks like.
         owner: 472
         group: 472
         mode: 0755
-        recurse: yes
+        # recurse: yes
       with_items:
         - "{{ monitor_dir }}/grafana"
+        - "{{ monitor_dir }}/grafana/sessions"
+        - "{{ monitor_dir }}/grafana/plugins"
+
+    - name: Set file perms on grafana.db file
+      become: true
+      file:
+        path: "{{ monitor_dir }}/grafana/grafana.db"
+        state: file
+        owner: 472
+        group: 472
+        mode: 0664
 
 ## Prometheus
 
 When you make an update to the prometheus.yml file, the desired action is for the Prometheus server to be restarted.  Because I'm deploying this in an automated fashion, I need to handle the restarting of this service the same way and add in a couple of checks along the way.  [This Ansible playbook can be found here](https://github.com/jahrik/docker-swarm-monitor/blob/master/monitor/tasks/main.yml).
-
-**It all goes like this:**
 
 The config file is generated and registers a variable, `prom_conf` containing information about the file in question, `prometheus.yml`, including information on whether the file has been changed this run or not.
 
@@ -96,7 +105,7 @@ The config file is generated and registers a variable, `prom_conf` containing in
         mode: 0644
       register: prom_conf
 
-A check to see if Prometheus is running or not with the [uri module](http://docs.ansible.com/ansible/latest/modules/uri_module.html).  This also registers a variable, `result` containing a status code returned from whatever webserver it's pointed at.  In this case, I'm pulling the default IPv4 address from the host that ansible is currently running on and adding `:9090/graph` to the end of that, in hopes of reaching Prometheus.  Notice how this one also has `ignore_erros: true`.  The reason for this, is for the very first time this runs on docker or for times when Prometheus is not actually running.  Without that, you will get a status_code back that does not equal 200 and this task will fail.
+A check to see if Prometheus is running or not, with the [uri module](http://docs.ansible.com/ansible/latest/modules/uri_module.html).  This also registers a variable, `result`, containing a status code returned from whatever webserver it's pointed at.  In this case, I'm pulling the default IPv4 address from the host that ansible is currently running on and adding `:9090/graph` to the end of that, in hopes of reaching Prometheus.  Notice how this one also has `ignore_erros: true`.  The reason for this, is for the very first time this runs on docker or for times when Prometheus is not actually running.  Without that, you will get a status_code back that does not equal 200 and this task will fail.
 
     - name: Check if prometheus is running
       ignore_errors: true
@@ -226,11 +235,11 @@ Refresh the docker swarm monitor dashboard and there should be a lot more info n
 
 ![pihole.png](https://github.com/jahrik/docker-swarm-monitor/blob/master/images/pihole.png?raw=true)
 
-Seeing the results and experiencing an increase in query speeds, was worth the hour or so of fussing with pfsense. Finally, disabling DHCP and DNS forwarding altogether on the firewall and just letting Pi-Hole handle it, worked.  The dashboard that comes with pihole is great and really all you need for this service, but it's also nice to have these metrics in the same location as other monitoring tools and graphs.
+Seeing the results and experiencing an increase in query speeds, was worth the hour or so of fussing with pfsense. Finally, disabling DHCP and DNS forwarding altogether on the firewall and just letting Pi-Hole handle it, worked.  The dashboard that comes with pihole is great and really all you need for this service, but it's also nice to have those metrics in the same location as other monitoring tools and graphs.
 
 ## Pihole exporter
 
-**where pihole_host_ip is the ip or hostname of pihole**
+* where `pihole_host_ip` is the ip or hostname of pihole
 
 One way to accomplish this is with the [pihole_exporter](https://github.com/nlamirault/pihole_exporter) for prometheus.  I fought with this for a good hour before getting it to work.  Eventually building it from source with docker and pushing it up to docker hub to pull into swarm at stack creation time.
 
