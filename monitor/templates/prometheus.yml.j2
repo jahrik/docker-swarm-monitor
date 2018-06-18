@@ -32,6 +32,7 @@ scrape_configs:
     static_configs:
     - targets:
       - shredder:9100
+      - odroid:9100
 
   # http://shredder:9101/metrics
   - job_name: 'pihole'
