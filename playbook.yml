@@ -1,6 +1,0 @@
----
-- hosts: all
-  vars:
-    monitor_dir: /shredder_pool
-  roles:
-    - monitor

@@ -1,0 +1,74 @@
+configs:
+  prometheus_config:
+    file: ./prometheus.yml
+  grafana_datasources:
+    file: ./provisioning/datasources/prometheus.yml
+  grafana_dashboard_provider:
+    file: ./provisioning/dashboards/provider.yml
+  grafana_dashboard_node_exporter:
+    file: ./provisioning/dashboards/node-exporter.json
+  grafana_dashboard_cadvisor:
+    file: ./provisioning/dashboards/cadvisor.json
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - target: 9090
+        published: 9090
+        mode: host
+    volumes:
+      - prometheus_data:/prometheus
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - target: 3000
+        published: 3000
+        mode: host
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    configs:
+      - source: grafana_datasources
+        target: /etc/grafana/provisioning/datasources/prometheus.yml
+      - source: grafana_dashboard_provider
+        target: /etc/grafana/provisioning/dashboards/provider.yml
+      - source: grafana_dashboard_node_exporter
+        target: /etc/grafana/provisioning/dashboards/node-exporter.json
+      - source: grafana_dashboard_cadvisor
+        target: /etc/grafana/provisioning/dashboards/cadvisor.json
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:

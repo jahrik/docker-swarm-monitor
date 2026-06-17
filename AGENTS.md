@@ -4,18 +4,34 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## Purpose
 
-Tutorial repo behind the homelab.business "Docker Swarm monitoring" article series (part 01 in `README.md`, part 02 in `PART_02.md`). It documents and automates a Swarm monitoring stack — node-exporter, Prometheus, Grafana, cAdvisor, and a Pi-hole exporter — with screenshots in `images/`.
+A Docker Compose monitoring stack — Prometheus, Grafana, node-exporter, cAdvisor — usable as-is with plain compose or adapted for Docker Swarm.
 
-There is **no Docker image built here** — the stack runs upstream images (`prom/prometheus`, `grafana/grafana`, `prom/node-exporter`, etc.).
+There is no Docker image built here; the stack runs upstream images only.
 
 ## Layout
 
-- `README.md` / `PART_02.md` — the tutorial articles themselves; they link to files in this repo at specific paths, so be careful when renaming or deleting anything
-- `monitor/` — Ansible role that creates the volume directory structure (with the uid/gid quirks Grafana 472 and Prometheus 65534 expect), templates `prometheus.yml` and `monitor-stack.yml`, and deploys the stack to Swarm
-- `playbook.yml` — entry point applying the `monitor` role (`monitor_dir` is the ZFS pool path)
-- `Makefile` — the manual pre-Ansible flow from part 01 (mkdir/chown, copy config, `docker stack deploy`)
-- `Jenkinsfile` — Jenkins → Ansible Tower deployment pipeline; **referenced by PART_02.md as tutorial content, do not delete**
+- `docker-compose.yml` — the full stack definition with named volumes for persistence
+- `prometheus.yml` — Prometheus scrape config; bind-mounted into the container at runtime
+- `README.md` — quickstart and dashboard import instructions
 
-## Working on it
+## Common operations
 
-This is a docs/tutorial archive, not active infrastructure. Keep changes documentation-shaped; there is no CI and no release pipeline. If the Ansible role is ever modernized (FQCN modules, molecule), follow the patterns from the `ansible-*` role repos.
+```bash
+docker compose up -d          # start the stack
+docker compose logs -f        # follow logs
+docker compose restart prometheus   # reload after editing prometheus.yml
+docker compose down           # stop (volumes preserved)
+docker compose down -v        # stop and delete all data
+```
+
+For local Swarm testing with dswarm (dind under Podman):
+
+```bash
+podman start dind
+dswarm stack deploy --resolve-image never -c docker-compose.yml monitor
+dswarm service ls
+```
+
+## Adding scrape targets
+
+Edit `prometheus.yml` and add a job under `scrape_configs`, then `docker compose restart prometheus`. Service names in the compose file resolve as DNS hostnames within the stack network.
